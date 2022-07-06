@@ -76,6 +76,11 @@ class GamePole:
         self._cells = np.zeros((self.pole_settings['COUNT_BLOCKS'], self.pole_settings['COUNT_BLOCKS']))
         self._available = set([(x, y) for x in range(self.pole_settings['COUNT_BLOCKS']) for y in
                                range(self.pole_settings['COUNT_BLOCKS'])])
+        self.pl_rect_x = self.pole_settings['LEFT_MARGIN']
+        self.com_rect_x = self.pl_rect_x + self.pole_settings['SIZE_BLOCK'] * self.pole_settings['COUNT_BLOCKS'] + \
+                          self.pole_settings['MARGIN'] * (self.pole_settings['COUNT_BLOCKS'] + 2) + self.SPACE_BETWEEN
+        self.pole_width = (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']) * self.pole_settings[
+            'COUNT_BLOCKS']
 
     def generate_coords(self, ship, available):
         ship.generate_coords(available)
@@ -109,86 +114,72 @@ class GamePole:
                         self._available.discard((y + m, x + k))
         return self._available
 
-    def draw(self):
-        letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+    def draw_hit(self, block):
+        x = self.com_rect_x + block[0] * (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN'])
+        y = self.pole_settings['HEADER_MARGIN'] + block[1] * (
+                    self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN'])
+        pygame.draw.line(self.screen, (0, 0, 0), (x, y), (x + self.pole_settings['SIZE_BLOCK'],
+                                                          y + self.pole_settings['SIZE_BLOCK']),
+                         self.pole_settings['SIZE_BLOCK'] // 6)
+        pygame.draw.line(self.screen, (0, 0, 0), (x, y + self.pole_settings['SIZE_BLOCK']),
+                         (x + self.pole_settings['SIZE_BLOCK'], y),
+                         self.pole_settings['SIZE_BLOCK'] // 6)
+        #print((x + self.pole_settings['SIZE_BLOCK'], y + self.pole_settings['SIZE_BLOCK']))
+        # pygame.display.flip()
+
+    def draw_fail(self, block):
+        x = self.com_rect_x + block[0] * (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']) + self.pole_settings['SIZE_BLOCK']//2
+        y = self.pole_settings['HEADER_MARGIN'] + block[1] * (
+                self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']) + self.pole_settings['SIZE_BLOCK']//2
+        pygame.draw.circle(self.screen, (0,0,0), (x, y), self.pole_settings['SIZE_BLOCK'] // 6)
+
+    def draw_grid(self):
         self.screen.fill(self.pole_settings['FRAME_COLOR'])
-        pygame.draw.rect(self.screen, self.pole_settings['HEADER_COLOR'],
-                         [self.pole_settings['LEFT_MARGIN'], 0, (self._size[0] - self.SPACE_BETWEEN -
-                                                                 2 * self.pole_settings['LEFT_MARGIN']) / 2,
-                          self.pole_settings['HEADER_MARGIN']])
-        pygame.draw.rect(self.screen, self.pole_settings['HEADER_COLOR'],
-                         [self.pole_settings['LEFT_MARGIN'] +
-                          self.pole_settings['SIZE_BLOCK'] * self.pole_settings['COUNT_BLOCKS'] +
-                          self.pole_settings['MARGIN'] * (self.pole_settings['COUNT_BLOCKS'] + 2) +
-                          self.SPACE_BETWEEN, 0, (self._size[0] - self.SPACE_BETWEEN -
-                                                  2 * self.pole_settings['LEFT_MARGIN']) / 2,
-                          self.pole_settings['HEADER_MARGIN']])
+        for x in [self.pl_rect_x, self.com_rect_x]:
+            pygame.draw.rect(self.screen, self.pole_settings['HEADER_COLOR'],
+                             [x, 0, self.pole_width, self.pole_settings['HEADER_MARGIN']])
         btn_1 = Button(self.pole_settings['LEFT_MARGIN'], self.pole_settings['HEADER_MARGIN'] +
                        (self._size[0] - self.SPACE_BETWEEN - 2 * self.pole_settings['LEFT_MARGIN']) / 2,
-                       5 * (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']), 40,
-                       'Новое поле')
+                       5 * (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']), 40, 'Новое поле')
         btn_1.draw_button(self, self.courier, (0, 130, 234), (255, 255, 255))
+        letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
         for row in range(self.pole_settings['COUNT_BLOCKS']):
             for column in range(self.pole_settings['COUNT_BLOCKS']):
                 self.draw_block(self.pole_settings['LEFT_POLE_COLOR'], row, column)
-                self.draw_block(self.pole_settings['RIGHT_POLE_COLOR'], row,
-                                column + self.pole_settings['COUNT_BLOCKS'] + 2)
+                self.draw_block(self.pole_settings['RIGHT_POLE_COLOR'], row, column, 'computer')
                 if row < 10:
                     num_ver = self.font.render(str(row + 1), True, (0, 0, 0))
                     letters_hor = self.font.render(letters[row], True, (0, 0, 0))
-
-                    num_ver_width = num_ver.get_width()
                     num_ver_height = num_ver.get_height()
                     letters_hor_width = letters_hor.get_width()
-                    # Первое поле
-                    self.screen.blit(num_ver, (self.pole_settings['LEFT_MARGIN'] -
-                                               (self.pole_settings['SIZE_BLOCK'] // 2 + num_ver_width // 2),
-                                               self.pole_settings['HEADER_MARGIN'] + row * (
-                                                       self.pole_settings['SIZE_BLOCK'] +
-                                                       self.pole_settings['MARGIN']) +
-                                               (self.pole_settings['SIZE_BLOCK'] // 2 - num_ver_height // 2)))
-                    self.screen.blit(letters_hor, (self.pole_settings['LEFT_MARGIN'] +
-                                                   row * (self.pole_settings['SIZE_BLOCK'] +
-                                                          self.pole_settings['MARGIN']) + (
-                                                           (self.pole_settings['SIZE_BLOCK'] +
-                                                            self.pole_settings[
-                                                                'MARGIN']) // 2 - letters_hor_width // 2),
-                                                   self.pole_settings['HEADER_MARGIN'] - self.pole_settings[
-                                                       'SIZE_BLOCK'] // 2))
-                    # Второе поле
-                    self.screen.blit(num_ver, (self.pole_settings['LEFT_MARGIN'] +
-                                               self.pole_settings['SIZE_BLOCK'] * self.pole_settings['COUNT_BLOCKS'] +
-                                               self.pole_settings['MARGIN'] * (
-                                                       self.pole_settings['COUNT_BLOCKS'] + 2) +
-                                               self.SPACE_BETWEEN -
-                                               (self.pole_settings['SIZE_BLOCK'] // 2 + num_ver_width // 2),
-                                               self.pole_settings['HEADER_MARGIN'] + row * (
-                                                       self.pole_settings['SIZE_BLOCK'] +
-                                                       self.pole_settings['MARGIN']) +
-                                               (self.pole_settings['SIZE_BLOCK'] // 2 - num_ver_height // 2)))
-                    self.screen.blit(letters_hor, (self.pole_settings['LEFT_MARGIN'] +
-                                                   self.pole_settings['SIZE_BLOCK'] * self.pole_settings[
-                                                       'COUNT_BLOCKS'] +
-                                                   self.pole_settings['MARGIN'] * (
-                                                           self.pole_settings['COUNT_BLOCKS'] + 2) +
-                                                   self.SPACE_BETWEEN +
-                                                   row * (self.pole_settings['SIZE_BLOCK'] +
-                                                          self.pole_settings['MARGIN']) + (
-                                                           (self.pole_settings['SIZE_BLOCK'] +
-                                                            self.pole_settings[
-                                                                'MARGIN']) // 2 - letters_hor_width // 2),
-                                                   self.pole_settings['HEADER_MARGIN'] - self.pole_settings[
-                                                       'SIZE_BLOCK'] // 2))
-
-        for ship in self._ships:
-            for coord_1, coord_2 in zip(ship.ship_x, ship.ship_y):
-                self.draw_block(self.pole_settings['SHIP_COLORS'][ship.length], coord_1, coord_2)
-        pygame.display.flip()
+                    for x in [self.pl_rect_x, self.com_rect_x]:
+                        self.screen.blit(num_ver, (x - (self.pole_settings['SIZE_BLOCK'] // 2),
+                                                   self.pole_settings['HEADER_MARGIN'] + row * (
+                                                           self.pole_settings['SIZE_BLOCK'] + self.pole_settings[
+                                                       'MARGIN']) +
+                                                   (self.pole_settings['SIZE_BLOCK'] // 2 - num_ver_height // 2)))
+                        self.screen.blit(letters_hor,
+                                         (x + row * (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']) +
+                                          (self.pole_settings['SIZE_BLOCK'] // 2 + self.pole_settings[
+                                              'MARGIN'] // 2 - letters_hor_width // 2),
+                                          self.pole_settings['HEADER_MARGIN'] - self.pole_settings['SIZE_BLOCK'] // 2))
         return btn_1
 
+    def draw_ships(self, name='player'):
+        for ship in self._ships:
+            for coord_1, coord_2 in zip(ship.ship_x, ship.ship_y):
+                self.draw_block(self.pole_settings['SHIP_COLORS'][ship.length], coord_2, coord_1, name)
+
     def show(self):
+        BLOCK = (0, 0)
+        computer_turn = False
+        btn_1 = self.draw_grid()
+        pole_2 = GamePole()
+        comp_ships = pole_2.arrange_the_ships()
+        self.draw_ships()
+        #pole_2.draw_ships('computer')
+        pygame.display.update()
         while True:
-            btn_1 = self.draw()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     print('exit')
@@ -198,11 +189,28 @@ class GamePole:
                     new_pole = GamePole()
                     new_pole.arrange_the_ships()
                     new_pole.show()
+                elif not computer_turn and event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = event.pos
+                    if self.com_rect_x <= x <= self.com_rect_x + self.pole_width \
+                            and self.pole_settings['HEADER_MARGIN'] <= \
+                            y <= self.pole_settings['HEADER_MARGIN'] + self.pole_width:
+                        block = (
+                        (x - self.com_rect_x) // (self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']),
+                        (y - self.pole_settings['HEADER_MARGIN']) // (
+                                    self.pole_settings['SIZE_BLOCK'] + self.pole_settings['MARGIN']))
+                        if comp_ships[block[1], block[0]] == 1:
+                            self.draw_hit(block)
+                        else:
+                            self.draw_fail(block)
+                pygame.display.update()
 
-
-    def draw_block(self, color, row, column):
+    def draw_block(self, color, row, column, name='player'):
+        if name != 'player':
+            x = self.com_rect_x
+        else:
+            x = self.pl_rect_x
         pygame.draw.rect(self.screen, color,
-                         [self.pole_settings['LEFT_MARGIN'] + column * self.pole_settings['SIZE_BLOCK'] +
+                         [x + column * self.pole_settings['SIZE_BLOCK'] +
                           self.pole_settings['MARGIN'] * (column + 1),
                           self.pole_settings['HEADER_MARGIN'] + row * self.pole_settings['SIZE_BLOCK']
                           + self.pole_settings['MARGIN'] * (row + 1), self.pole_settings['SIZE_BLOCK'],
@@ -224,4 +232,8 @@ class Button:
                                         self.rect_button.centery - 14))
 
 
-
+pole_player = GamePole()
+p_1 = pole_player.arrange_the_ships()
+pole_computer = GamePole()
+p_2 = pole_computer.arrange_the_ships()
+pole_player.show()
